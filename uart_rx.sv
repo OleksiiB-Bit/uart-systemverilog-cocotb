@@ -25,6 +25,10 @@ always_ff @(posedge clk or posedge reset) begin
 		state <= RX_IDLE;
 		rx_sync1 <= 1'b1;
 		rx_sync2 <= 1'b1;
+		sample_counter <= '0;
+		bit_counter <= '0;
+		data <= '0;
+		rx_data <= '0;
 	end else begin
 		rx_sync1 <= rx;
 		rx_sync2 <= rx_sync1;
@@ -40,19 +44,22 @@ always_ff @(posedge clk or posedge reset) begin
 			RX_START: begin
 				if (tick) begin
 					if (sample_counter == 4'd7) begin
-						if (rx_sync2==1'b0) state <= RX_DATA;
-						else state <= RX_IDLE;
-						sample_counter <= '0;
-					end else state <= RX_IDLE;
-				end else sample_counter <= sample_counter + 1'b1;
+						if (rx_sync2==1'b0) begin
+							state <= RX_DATA;
+							sample_counter <= '0;
+						end else state <= RX_IDLE;
+					end else sample_counter <= sample_counter + 1'b1;
+				end
 			end
 			RX_DATA: begin
 				if (tick) begin
 					if (sample_counter == 4'd15) begin
 						sample_counter <= '0;
 						data <= {rx_sync2, data[7:1]};
-						if (bit_counter == 4'd7) state <= RX_STOP;
-						else bit_counter <= bit_counter + 1'b1;
+						if (bit_counter == 4'd7) begin
+							state <= RX_STOP;
+							bit_counter <= '0;
+						end else bit_counter <= bit_counter + 1'b1;
 					end else begin
 						sample_counter <= sample_counter + 1'b1;
 					end
