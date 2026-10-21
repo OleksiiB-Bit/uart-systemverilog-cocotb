@@ -9,9 +9,11 @@ module baud_gen #(
 );
 
 localparam int DIV_LIMIT_16X = CLK_FREQ / (BAUD_RATE * 16);
-localparam int WIDTH_16X = $clog2(DIV_LIMIT_16X);
-logic [WIDTH_16X - 1 : 0] counter_16x;
-logic [3:0] counter_1x;
+localparam int DIV_LIMIT_1X = CLK_FREQ / BAUD_RATE;
+
+logic [$clog2(DIV_LIMIT_16X)-1: 0] counter_16x;
+logic [$clog2(DIV_LIMIT_1X)-1: 0] counter_1x;
+
 always_ff @(posedge clk or posedge reset) begin
 	if (reset) begin
 		counter_16x <= '0;
@@ -19,21 +21,22 @@ always_ff @(posedge clk or posedge reset) begin
 		tick_baud_x16 <= 1'b0;
 		tick_baud <= 1'b0;
 	end else begin
-		tick_baud_x16 <= 0;
-		tick_baud <= 0;
 		if (counter_16x >= DIV_LIMIT_16X - 1) begin
+			counter_16x   <= '0;
 			tick_baud_x16 <= 1'b1;
-			counter_16x <= '0;
-			if (counter_1x == 4'd15) begin
-				counter_1x <= '0;
-				tick_baud <= 1'b1;
-			end else begin
-				counter_1x <= counter_1x + 1'b1;
-			end
 		end else begin
-			counter_16x <= counter_16x + 1'b1;
+			counter_16x   <= counter_16x + 1'b1;
+			tick_baud_x16 <= 1'b0;
+		end
+		if (counter_1x >= DIV_LIMIT_1X - 1) begin
+			counter_1x <= '0;
+			tick_baud  <= 1'b1;
+		end else begin
+			counter_1x <= counter_1x + 1'b1;
+			tick_baud  <= 1'b0;
 		end
 	end
 end
 
 endmodule
+
